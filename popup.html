@@ -1,0 +1,286 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+        <title>MobileResizer popup</title>
+
+        <style>
+            
+            body {
+                font-family: Gothic, Verdana, Arial;
+            }
+            .popup {
+                width:350px;
+            }
+            .tabs * {
+                
+                font-size:10px;
+            }
+            .tabs { min-height: 280px; position: absolute; width: 95%; }
+            
+            .tabs > div > a { z-index:3;margin-left: -1px; position: relative; left: 1px; text-decoration: none; color: black; background: white; display: block; float: left; padding: 5px 10px; border: 1px solid #ccc; border-bottom: 1px solid silver; }
+            .tabs > div > a:hover { background: -webkit-linear-gradient(top, #eee, white) !important;border-bottom: 1px solid white;  }
+            .tabs > div:not(:target) > a { border-bottom: 0; background: -webkit-linear-gradient(top, white, #eee); }	
+            .tabs > div:target > a { background: -webkit-linear-gradient(top, #eee, white) !important;border-bottom: 1px solid white; }	
+            .tabs > div > div { overflow:auto; background: white; z-index: -2; left: 0; top: 43px; bottom: 0; right: 0; padding: 10px; border: 1px solid #ccc; }	
+            .tabs > div:not(:target) > div { position: absolute }
+            .tabs > div:target > div { position: absolute; z-index: 0; }
+            
+            .tabs > div > div > div.title {
+                font-size:17px;
+                font-weight:bold;
+                margin-bottom:5px;
+            }
+            
+            img {border:0px}
+            
+            .resume {
+                position:relative;
+                top: 290px;
+                
+            }
+            .infos {
+                margin-top:15px;
+                
+            }
+            .size-info1 {
+            
+            }
+            .size-info2 {
+                font-size:18px;
+                font-weight:bold;
+            }
+            .options {
+                margin-top:10px;
+            }
+            .apply {
+                font-size:20px; 
+                
+            }
+             
+    </style>
+        <script language="javascript">
+            var newWidth = 0;
+            var newHeight = 0;
+            
+            function getCheckedRadio( name ) {
+                   var radioButtons = document.getElementsByName( name );   
+                   var l = radioButtons.length;
+                   for (var x = 0; x < l; x ++) {
+                     if (radioButtons[x].checked) {return radioButtons[x];}
+                   }
+                   return null;
+                 }
+                 
+            function getOptionsOffset( name ) {
+                var offset = 0;
+                var options = document.getElementById( name ).getElementsByTagName("input");
+                for (var i=0; i< options.length; i++) {
+                    if (options[i].checked) {
+                        offset += parseInt(options[i].value);
+                    }
+                }
+                return offset;
+            }
+            
+            function updateNewSize() {
+                var width = 0, height = 0;
+                var device = document.location.hash.substring(1);
+                var offset = 0;
+                if (device == 'ipad') {
+                    width = 1024;
+                    height = 768;
+                    offset = getOptionsOffset('ipad-options');
+                }
+                else if (device == 'iphone') {
+                    width = 480;
+                    height = 320;
+                    offset = getOptionsOffset('iphone-options');
+                }
+                else if (device == 'android-tablets') {
+                    var d = getCheckedRadio('tablet-model').value.split('x');
+                    width = d[0];
+                    height = d[1];
+                    offset = getOptionsOffset('android-tablets-options');
+                }
+                else if (device == 'android-phones') {
+                    var d = getCheckedRadio('phone-model').value.split('x');
+                    width = d[0];
+                    height = d[1];
+                    offset = getOptionsOffset('android-phones-options');
+                }
+                else if (device == 'blackberry') {
+                    var d = getCheckedRadio('blackberry-model').value.split('x');
+                    width = d[0];
+                    height = d[1];
+                    offset = getOptionsOffset('blackberry-options');
+                }
+                if (document.getElementById('orient_vertical').checked) {
+                    var height1 = height;
+                    height = width;
+                    width = height1;
+                }
+                height -= offset;
+                newWidth = width;
+                newHeight = height;
+                document.getElementById('size-selected').innerHTML = width+'x'+height+'px';
+            }
+            
+            // chrome extension stuuf
+            function getPageInfo(callback) {
+                var bg = chrome.extension.getBackgroundPage();
+                bg.getPageInfo(callback);
+            }
+                
+            function rotate() {
+                getPageInfo(function(o) {
+                    var w = parseInt(o.innerWidth);
+                    var h = parseInt(o.innerHeight);
+                    changeSize(h, w);
+                }) 
+            }
+
+            function changeSize(newWidth, newHeight)
+            {
+                chrome.windows.getCurrent(function(w) {
+                      getPageInfo(function(o) { 
+                        var width = parseInt(newWidth) + (o.marginWidth);
+                        var height = parseInt(newHeight) + (o.marginHeight);
+                        chrome.windows.update(w.id, {width: width, height: height });
+                        window.close();
+                    }) 
+                });
+
+            }
+            
+            function applySize() {
+                if ( newWidth> 0 && newHeight>0 )  changeSize(newWidth, newHeight);
+            }
+            
+            function init() {
+                if (document.location.hash == '') {
+                    document.location.hash='#ipad';
+                }
+                
+                chrome.windows.getCurrent(function(w) {
+                      getPageInfo(function(o) { 
+                        document.getElementById('size-current').innerHTML = o.innerWidth+'x'+o.innerHeight+'px';
+                        // detect orientation
+                        document.getElementById('orient_vertical').checked = (o.innerHeight > o.innerWidth);
+                        updateNewSize();
+                    }) 
+                });
+            }
+        </script>   
+    
+
+    </head>
+
+      
+    <body onload="init();">
+        <div class="popup">
+            <center>
+                <button class="apply" onclick="rotate()"><img src="rotate.png"/> rotate current webpage</button>
+                <br/>
+                <br/>
+            </center>
+            <div class="tabs"> 
+                <div id="ipad"> 
+                    <a title="iPad" href="#ipad" onclick="setTimeout(updateNewSize,10)" ><img src="ipad2.png"/></a> 
+                    <div>
+                        <div class="title">Emulate iPad (1024x768)</div>
+                        <div id="ipad-options" class="options">
+                            <b>Options : </b><br/>
+                            <input type="checkbox" id="ipad-statusbar" value="20" disabled=true checked onclick="updateNewSize()"><label for="ipad-statusbar">statusbar bar (20px)</label><br/>
+                            <input type="checkbox" id="ipad-addrbar" value="58" checked onclick="updateNewSize()"><label for="ipad-addrbar">add address bar (58px)</label><br/>
+                            <input type="checkbox" id="ipad-favbar" value="30" onclick="updateNewSize()" ><label for="ipad-favbar">add favorites bar (30px)</label><br/>
+                            <input type="checkbox" id="ipad-debug" value="50" onclick="updateNewSize()" ><label for="ipad-debug">add safari console (50px)</label>
+                        </div>
+                    </div> 
+                </div> 
+                <div id="iphone"> 
+                    <a title="iPhone" href="#iphone" onclick="setTimeout(updateNewSize,10)" ><img src="iphone4.png"/></a> 
+                    <div>
+                        <div class="title">Emulate iPhone (480x320)</div>
+                         <div id="iphone-options" class="options">
+                            <b>Options : </b><br/>
+                            <input type="checkbox" id="iphone-statusbar" value="20" disabled=true checked onclick="updateNewSize()"><label for="iphone-statusbar">statusbar bar (20px)</label><br/>
+                            <input type="checkbox" id="iphone-addrbar" value="58" checked onclick="updateNewSize()"><label for="iphone-addrbar">add address bar (58px)</label><br/>
+                            <input type="checkbox" id="iphone-favbar" value="30" onclick="updateNewSize()" ><label for="iphone-favbar">add favorites bar (30px)</label><br/>
+                            <input type="checkbox" id="iphone-debug" value="50" onclick="updateNewSize()" ><label for="iphone-debug">add safari console (50px)</label>
+                        </div>
+                    </div> 
+                </div> 
+                <div id="android-tablets"> 
+                    <a title="Android tablets" href="#android-tablets" onclick="setTimeout(updateNewSize,10)"><img src="android-tablet.png"/></a> 
+                    <div>
+                        <div class="title">Emulate Android tablet</div>
+                        <input type="radio" name="tablet-model" id="android-tablet-xoom" value="1280x800" checked onclick="updateNewSize()" ><label for="android-tablet-xoom">Motorola xoom (1280x800)</label><br/>
+                        <input type="radio" name="tablet-model" id="android-tablet-eeepad" value="1280x800"  onclick="updateNewSize()" ><label for="android-tablet-eeepad">ASUS EEEpad (1280x800)</label><br/>
+                        <input type="radio" name="tablet-model" id="android-tablet-iconia" value="1280x800"  onclick="updateNewSize()" ><label for="android-tablet-iconia">ACER Iconia (1280x800)</label><br/>
+                        <input type="radio" name="tablet-model" id="android-tablet-dellstreak" value="800x480"  onclick="updateNewSize()" ><label for="android-tablet-dellstreak">DELL Streak (800x480)</label><br/>
+                        <input type="radio" name="tablet-model" id="android-tablet-galaxy7" value="1024x600"  onclick="updateNewSize()" ><label for="android-tablet-galaxy7">SAMSUNG Galaxy 7 (1024x600)</label><br/>
+                        <input type="radio" name="tablet-model" id="android-tablet-galaxy10" value="1280x800" onclick="updateNewSize()"  ><label for="android-tablet-galaxy10">SAMSUNG Galaxy 10 (1280x800)</label><br/> 
+                        <div id="android-tablets-options" class="options">
+                            <b>Options : </b><br/>
+                            <input type="checkbox" id="android-tablets-addrbar" value="48"  checked onclick="updateNewSize()"><label for="android-tablets-addrbar">address bar (48px)</label><br/>
+                            <input type="checkbox" id="android-tablets-tabsbar" value="56"  checked onclick="updateNewSize()"><label for="android-tablets-tabsbar">top tabs bar (56px)</label><br/>
+                            <input type="checkbox" id="android-tablets-statusbar" value="48"  checked onclick="updateNewSize()"><label for="android-tablets-statusbar">bottom status bar (48px)</label><br/>
+                            
+                        </div>
+                    </div> 
+                </div> 
+                <div id="android-phones"> 
+                    <a title="Android phones" href="#android-phones" onclick="setTimeout(updateNewSize,10)" ><img src="android-phone.png"/></a> 
+                    <div>
+                        <div class="title">Emulate Android phone</div>
+                        <input type="radio" name="phone-model" id="android-phone-1" value="480x320" checked onclick="updateNewSize()" ><label for="android-phone-1">HTC Hero, Dream, Droid (480x320)</label><br/>
+                        <input type="radio" name="phone-model" id="android-phone-2" value="533x320"  onclick="updateNewSize()" ><label for="android-phone-2">HTC Desire (533x320)</label><br/>
+                        <input type="radio" name="phone-model" id="android-phone-3" value="800x480"  onclick="updateNewSize()" ><label for="android-phone-2">HTC Desire HD, Incredible, Nexus One (800x480)</label><br/>
+                        <input type="radio" name="phone-model" id="android-phone-4" value="854x480"  onclick="updateNewSize()" ><label for="android-phone-3">Motorola Droid (1, 2, X), Milestone (854x480)</label><br/>
+                        <input type="radio" name="phone-model" id="android-phone-5" value="800x480"   onclick="updateNewSize()"><label for="android-phone-4">Samsung Galaxy S, Nexus S (800x480)</label><br/>
+                        <input type="radio" name="phone-model" id="android-phone-6" value="854x480"  onclick="updateNewSize()" ><label for="android-phone-5">Sony Ericson Xperia Arc, X10 (854x480)</label><br/>
+                        <div id="android-phones-options" class="options">
+                            <b>Options : </b><br/>
+                            <input type="checkbox" id="android-phones-addrbar" value="60"  checked onclick="updateNewSize()"><label for="android-phones-addrbar">address bar (60px)</label><br/>
+                        </div>
+                    </div> 
+                </div> 
+                 <div id="blackberry"   > 
+                    <a title="Blackberry" href="#blackberry" onclick="setTimeout(updateNewSize,10)" ><img  src="rim.png"/></a> 
+                    <div>
+                        <div class="title">Emulate Blackberry Playbook </div>
+                        <input type="radio" name="blackberry-model" id="playbook-1" value="1024x600" checked onclick="updateNewSize()" ><label for="playbook-1">Playbook (1024x600)</label><br/>
+                         
+                        <div id="blackberry-options" class="options">
+                            <b>Options : </b><br/>
+                            <input type="checkbox" id="blackberry-statusbar" value="31" disabled=true checked onclick="updateNewSize()"><label for="blackberry-statusbar">statusbar bar (31px)</label><br/>
+                            <input type="checkbox" id="blackberry-toolbar" value="57"  checked onclick="updateNewSize()"><label for="blackberry-toolbar">toolbar (57px)</label><br/>
+                        </div>
+                    </div> 
+                    
+                </div> 
+            </div> 
+            <div class="resume">
+                <div class="orientation">
+                    <b>Choose orientation : </b><br/>
+                    <input type=radio name=orientation value=horizontal id=orient_horizontal checked onclick="updateNewSize()"  ><label for="orient_horizontal">horizontal</label><br/>
+                    <input type=radio name=orientation value=vertical id=orient_vertical  onclick="updateNewSize()"  ><label for="orient_vertical">vertical</label>
+                </div>
+                <center>
+                    <div class="infos">
+                        <div class="size-info1">current size : <span id="size-current">-</span></div>
+                        <div class="size-info2">new size : <span id="size-selected">-</span></div>
+                    </div>
+                    <br/>
+                    <button class="apply" onclick="applySize()"><img src="resize.png"/> Apply to webpage</button>
+                    <br/>
+                    <br/>
+                    <a style='font-size:10px;color:darkgrey' onclick="window.open('mailto:julien@revolunet.com')" href='#'>feedback : julien@revolunet.com</a>
+                    <br/>
+                </center>
+            </div>
+        </div>
+    </body>
+
+</html>

@@ -1,0 +1,25 @@
+{
+   "name": "Mobile Resizer",
+   "version":"2.2.4",
+   
+   "description": "Preview your website with real mobile resolutions, change orientation in one click. iPad, iPhone, Android, BlackBerry...",
+   "icons": {
+      "128": "icon128.png",
+      "16": "icon16.png",
+      "32": "icon32.png",
+      "48": "icon48.png"
+   },
+   
+   "browser_action": {
+      "default_icon": "icon16.png",
+      "default_title": "Mobile Resizer",
+      "popup": "popup.html"
+   },
+   
+   "background_page": "background.html",
+    "permissions": [
+        "tabs", 
+        "http://*/*", 
+        "https://*/*"
+    ]
+}
